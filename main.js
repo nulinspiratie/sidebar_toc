@@ -45,7 +45,6 @@ define([
         number_sections: true,
         sideBar: true,
         skip_h1_title: false,
-        toc_cell: false,
         toc_position: {},
         toc_section_display: 'block',
         toc_window_display: false,
@@ -55,9 +54,7 @@ define([
 
 //.....................global variables....
     var st={}
-    st.rendering_toc_cell = false;
     st.oldTocHeight = undefined
-    st.cell_toc = undefined;
     st.toc_index=0;
 
     var read_config = function (cfg, callback) {

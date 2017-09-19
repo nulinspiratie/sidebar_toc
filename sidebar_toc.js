@@ -45,7 +45,7 @@
   }
 
   var callback_toc_link_click = function (evt) {
-    console.log('callback_toc_link_click');
+    console.log('Sidebar: clicked TOC header (callback_toc_link_click)');
     // workaround for https://github.com/jupyter/notebook/issues/699
     setTimeout(function() { $.ajax() }, 100);
     evt.preventDefault();
@@ -64,6 +64,7 @@
   };
 
   var make_link = function (h, toc_mod_id) {
+    console.log('Sidebar: making TOC link (make_link)');
     var a = $('<a>')
       .attr({
         'href': window.location.href.split('#')[0] + h.find('.anchor-link').attr('href'),
@@ -78,6 +79,7 @@
   };
 
   function highlight_toc_item(evt, data) {
+    console.log('Sidebar: Highlighting toc item (highlight_toc_item)');
     var c = $(data.cell.element);
     if (c.length < 1) {
       return;
@@ -200,28 +202,10 @@
               //table_of_contents();
               return false;
             })
-        ).append(
-          $("<span/>")
-            .html("&nbsp;&nbsp;")
-        ).append(
-          $("<a/>")
-            .attr("href", "#")
-            .addClass("toc_cell_sections-btn")
-            .html("t")
-            .attr('title', 'Add a toc section in Notebook')
-            .click( function(){
-              cfg.toc_cell=!(cfg.toc_cell);
-              if(liveNotebook){
-                IPython.notebook.metadata.toc['toc_cell']=cfg.toc_cell;
-                IPython.notebook.set_dirty();}
-              table_of_contents(cfg,st);
-              return false;
-            })
         )
       ).append(
         $("<div/>").attr("id", "toc").addClass('toc')
-      )
-
+      );
 
     $("body").append(toc_wrapper);
 
@@ -302,72 +286,30 @@
 
     $('#site').trigger('siteHeight');
 
-    // Initial style
-    ///sideBar = cfg['sideBar']
-    if (cfg.sideBar) {
-      $('#toc-wrapper').addClass('sidebar-wrapper');
-      if (!liveNotebook) {
-        $('#toc-wrapper').css('width', '202px');
-        $('#notebook-container').css('margin-left', '212px');
-        $('#toc-wrapper').css('height', '96%');
-        $('#toc').css('height', $('#toc-wrapper').height() - $('#toc-header').height())
-      } else {
-        if (cfg.toc_window_display) {
-          setTimeout(function() {
-            setNotebookWidth(cfg, st)
-          }, 500)
-        }
+    // Initial style for sidebar
+    $('#toc-wrapper').addClass('sidebar-wrapper');
+    if (!liveNotebook) {
+      $('#toc-wrapper').css('width', '202px');
+      $('#notebook-container').css('margin-left', '212px');
+      $('#toc-wrapper').css('height', '96%');
+      $('#toc').css('height', $('#toc-wrapper').height() - $('#toc-header').height())
+    } else {
+      if (cfg.toc_window_display) {
         setTimeout(function() {
-          $('#toc-wrapper').css('height', $('#site').height());
-          $('#toc').css('height', $('#toc-wrapper').height() - $('#toc-header').height())
+          setNotebookWidth(cfg, st)
         }, 500)
       }
-      setTimeout(function() { $('#toc-wrapper').css('top', liveNotebook ? $('#header').height() : 0); }, 500) //wait a bit
-      $('#toc-wrapper').css('left', 0);
-
+      setTimeout(function() {
+        $('#toc-wrapper').css('height', $('#site').height());
+        $('#toc').css('height', $('#toc-wrapper').height() - $('#toc-header').height())
+      }, 500)
     }
+    setTimeout(function() { $('#toc-wrapper').css('top', liveNotebook ? $('#header').height() : 0); }, 500) //wait a bit
+    $('#toc-wrapper').css('left', 0);
 
-    else {
-      toc_wrapper.addClass('float-wrapper');
-    }
   }
 
 //------------------------------------------------------------------
-  // TOC CELL -- if cfg.toc_cell=true, add and update a toc cell in the notebook.
-  //             This cell, initially at the very beginning, can be moved.
-  //             Its contents are automatically updated.
-  //             Optionnaly, the sections in the toc can be numbered.
-
-
-  function process_cell_toc(cfg,st){
-    // look for a possible toc cell
-    var cells = IPython.notebook.get_cells();
-    var lcells=cells.length;
-    for (var i = 0; i < lcells; i++) {
-      if (cells[i].metadata.toc=="true") {
-        st.cell_toc=cells[i];
-        st.toc_index=i;
-        //console.log("Found a cell_toc",i);
-        break;}
-    }
-    //if toc_cell=true, we want a cell_toc.
-    //  If it does not exist, create it at the beginning of the notebook
-    //if toc_cell=false, we do not want a cell-toc.
-    //  If one exists, delete it
-    if(cfg.toc_cell) {
-      if (st.cell_toc == undefined) {
-        st.rendering_toc_cell = true;
-        //console.log("*********  Toc undefined - Inserting toc_cell");
-        st.cell_toc = IPython.notebook.select(0).insert_cell_above("markdown");
-        st.cell_toc.metadata.toc="true";
-      }
-    }
-    else{
-      if (st.cell_toc !== undefined) IPython.notebook.delete_cell(st.toc_index);
-      st.rendering_toc_cell=false;
-    }
-  } //end function process_cell_toc --------------------------
-
   var collapse_by_id = function (trg_id, show, trigger_event) {
     var anchors = $('.toc .toc-item > li > span > a').filter(function (idx, elt) {
       return $(elt).attr('data-toc-modified-id') === trg_id;
@@ -405,11 +347,6 @@
 // Table of Contents =================================================================
   var table_of_contents = function (cfg,st) {
 
-    if(st.rendering_toc_cell) { // if toc_cell is rendering, do not call  table_of_contents,
-      st.rendering_toc_cell=false;  // otherwise it will loop
-      return}
-
-
     var toc_wrapper = $("#toc-wrapper");
     // var toc_index=0;
     if (toc_wrapper.length === 0) {
@@ -421,17 +358,6 @@
     // update toc element
     $("#toc").empty().append(ul);
 
-
-    st.cell_toc = undefined;
-    // if cfg.toc_cell=true, add and update a toc cell in the notebook.
-
-    if(liveNotebook){
-      ///look_for_cell_toc(process_cell_toc);
-      process_cell_toc(cfg,st);
-    }
-    //process_cell_toc();
-
-    var cell_toc_text = " # Table of Contents\n";
     var depth = 1; //var depth = ol_depth(ol);
     var li= ul;//yes, initialize li with ul!
     var all_headers= $("#notebook").find(":header");
@@ -487,21 +413,6 @@
       ul.append(li);
     });
 
-
-    // check for st.cell_toc because we may have a non-live notebook where
-    // metadata says to use cell_toc, but the actual cell's been removed
-    if (cfg.toc_cell && st.cell_toc) {
-      st.rendering_toc_cell = true;
-      st.cell_toc.set_text(
-        cell_toc_text +
-        '<div class="toc" style="margin-top: 1em;">' +
-        $('#toc').html() +
-        '</div>'
-      );
-      st.cell_toc.render();
-      st.cell_toc.element.find('.toc-item li a').on('click', callback_toc_link_click);
-    };
-
     // add collapse controls
     $('<i>')
       .addClass('fa fa-fw fa-caret-down')
@@ -538,7 +449,6 @@
           IPython.notebook.set_dirty();
         }
         // recompute:
-        st.rendering_toc_cell = false;
         table_of_contents(cfg,st);
       }
     });
