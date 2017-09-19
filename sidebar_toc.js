@@ -44,27 +44,127 @@
     return elt
   }
 
-  var callback_toc_link_click = function (evt) {
+  var callback_toc_link_click = function (cfg, evt) {
     console.log('Sidebar: clicked TOC header (callback_toc_link_click)');
     // workaround for https://github.com/jupyter/notebook/issues/699
     setTimeout(function() { $.ajax() }, 100);
     evt.preventDefault();
     var trg_id = $(evt.currentTarget).attr('data-toc-modified-id');
+    console.log('Sidebar: trg_id: ' + trg_id);
     // use native scrollIntoView method with semi-unique id
     // ! browser native click does't follow links on all browsers
     // $('<a>').attr('href', window.location.href.split('#')[0] + '#' + trg_id)[0].click();
-    document.getElementById(trg_id).scrollIntoView(true)
+    document.getElementById(trg_id).scrollIntoView(true);
     if (liveNotebook) {
       // use native document method as jquery won't cope with characters
       // like . in an id
       var cell = $(document.getElementById(trg_id)).closest('.cell').data('cell');
       Jupyter.notebook.select(Jupyter.notebook.find_cell_index(cell));
+
+      if (cfg.hide_others) {
+        hide_all_except_id(trg_id);
+      }
+
       highlight_toc_item("toc_link_click", {cell: cell});
     }
   };
 
-  var make_link = function (h, toc_mod_id) {
+  function hide_all_except_id(trg_id) {
+    var cell_begin = $(document.getElementById(trg_id)).closest('.cell').data('cell');
+    var level = get_cell_level(cell_begin);
+
+    var cell_end = cell_begin;
+    var next_cell = Jupyter.notebook.get_next_cell(cell_end);
+    while (next_cell !== null && get_cell_level(next_cell) > level) {
+      cell_end = next_cell;
+      next_cell = Jupyter.notebook.get_next_cell(cell_end);
+    }
+
+    hide_cells_above(cell_begin);
+    hide_cells_below(cell_end);
+    show_cells_between(cell_begin, cell_end);
+  }
+
+  function hide_cells_above(cell) {
+    console.log(`Sidebar: Hiding cells above ${Jupyter.notebook.find_cell_index(cell)}`);
+    while (cell !== null) {
+      cell = Jupyter.notebook.get_prev_cell(cell);
+      if (cell !== null) {
+        cell.element.slideUp(0)
+      }
+    }
+  }
+
+  function hide_cells_below(cell) {
+    console.log(`Sidebar: Hiding cells below ${Jupyter.notebook.find_cell_index(cell)}`);
+    while (cell !== null) {
+      cell = Jupyter.notebook.get_next_cell(cell);
+      if (cell !== null) {
+        cell.element.slideUp(0)
+      }
+    }
+  }
+
+  function show_all_cells() {
+    console.log('Sidebar: Showing all cells');
+    for (let cell of Jupyter.notebook.get_cells()) {
+      cell.element.slideDown(0)
+    }
+  }
+
+  function show_cells_between(cell_begin, cell_end) {
+    var cell_begin_index = Jupyter.notebook.find_cell_index(cell_begin);
+    var cell_end_index = Jupyter.notebook.find_cell_index(cell_end);
+    console.log(`Sidebar: showing cells between ${cell_begin_index} and ${cell_end_index}`)
+
+    var cell = cell_begin;
+    while (Jupyter.notebook.find_cell_index(cell) !== cell_end_index) {
+      cell.element.slideDown(0);
+      cell = Jupyter.notebook.get_next_cell(cell);
+    }
+    cell.element.slideDown(0);
+  }
+
+	/**
+	 * Return the level of nbcell.
+	 * The cell level is an integer in the range 1-7 inclusive
+	 *
+	 * @param {Object} cell Cell instance or jQuery collection of '.cell' elements
+	 * @return {Integer} cell level
+	 */
+	function get_cell_level (cell) {
+		// headings can have a level up to 6, so 7 is used for a non-heading
+		var level = 7;
+		if (cell === undefined) {
+			return level;
+		}
+		if (liveNotebook) {
+			if ((typeof(cell) === 'object')  && (cell.cell_type === 'markdown')) {
+			level = cell.get_text().match(/^#*/)[0].length || level;
+			}
+		}
+		else {
+			// the jQuery pseudo-selector :header is useful for us, but is
+			// implemented in javascript rather than standard css selectors,
+			// which get implemented in native browser code.
+			// So we get best performance by using css-native first, then filtering
+			var only_child_header = $(cell).find(
+				'.inner_cell > .rendered_html > :only-child'
+			).filter(':header');
+			if (only_child_header.length > 0) {
+				level = Number(only_child_header[0].tagName.substring(1));
+			}
+		}
+		return Math.min(level, 7); // we rely on 7 being max
+	}
+
+  var make_link = function (h, toc_mod_id, cfg) {
     console.log('Sidebar: making TOC link (make_link)');
+
+    var callbackTocLinkClick = function (evt) {
+      callback_toc_link_click(cfg, evt)
+    };
+
     var a = $('<a>')
       .attr({
         'href': window.location.href.split('#')[0] + h.find('.anchor-link').attr('href'),
@@ -74,7 +174,7 @@
     var hclone = h.clone();
     hclone = removeMathJaxPreview(hclone);
     a.html(hclone.html());
-    a.on('click', callback_toc_link_click);
+    a.on('click', callbackTocLinkClick);
     return a;
   };
 
@@ -201,6 +301,22 @@
               cfg.number_sections ? $('.toc-item-num').show() : $('.toc-item-num').hide()
               //table_of_contents();
               return false;
+            })
+        ).append(
+          $("<span/>")
+            .html("&nbsp;&nbsp")
+        ).append(
+          $("<a/>")
+            .attr("href", "#")
+            .addClass("hide_others-btn")
+            .text("H")
+            .attr('title', 'Hide other headers')
+            .click( function(){
+              cfg.hide_others=!(cfg.hide_others);
+              if (!cfg.hide_others) {
+                show_all_cells();
+              }
+              console.log('Hiding others: ' + cfg.hide_others)
             })
         )
       ).append(
@@ -409,7 +525,7 @@
       $('<a>').addClass('toc-mod-link').attr('id', toc_mod_id).prependTo(h);
 
       // Create toc entry, append <li> tag to the current <ol>.
-      li = $('<li>').append($('<span/>').append(make_link(h, toc_mod_id)));
+      li = $('<li>').append($('<span/>').append(make_link(h, toc_mod_id, cfg)));
       ul.append(li);
     });
 
