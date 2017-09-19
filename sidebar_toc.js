@@ -551,7 +551,6 @@
 
   };
 
-
   var toggle_toc = function (cfg,st) {
     // toggle draw (first because of first-click behavior)
     //$("#toc-wrapper").toggle({'complete':function(){

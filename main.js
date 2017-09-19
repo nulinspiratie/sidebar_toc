@@ -224,6 +224,72 @@ define([
   }
 
 
+  function patch_actions() {
+    console.log('Sidebar: patching Jupyter up/down actions');
+
+    var kbm = Jupyter.keyboard_manager;
+
+    var action_up = kbm.actions.get(kbm.command_shortcuts.get_shortcut('up'));
+    action_up.handler = function (env) {
+      for (var index = env.notebook.get_selected_index() - 1; (index !== null) && (index >= 0); index--) {
+        if (env.notebook.get_cell(index).element.is(':visible')) {
+          env.notebook.select(index);
+          env.notebook.focus_cell();
+          return;
+        }
+      }
+    };
+
+    var action_down = kbm.actions.get(kbm.command_shortcuts.get_shortcut('down'));
+    action_down.handler = function (env) {
+      var ncells = env.notebook.ncells();
+      for (var index = env.notebook.get_selected_index() + 1; (index !== null) && (index < ncells); index++) {
+        if (env.notebook.get_cell(index).element.is(':visible')) {
+          env.notebook.select(index);
+          env.notebook.focus_cell();
+          return;
+        }
+      }
+    };
+
+    var action_run_select_below = kbm.actions.get(kbm.command_shortcuts.get_shortcut('shift-enter'));
+    action_run_select_below.handler = function (env) {
+      var indices = env.notebook.get_selected_cells_indices();
+      var cell_index;
+      if (indices.length > 1) {
+        env.notebook.execute_cells(indices);
+        cell_index = Math.max.apply(Math, indices);
+      } else {
+        var cell = env.notebook.get_selected_cell();
+        cell_index = env.notebook.find_cell_index(cell);
+        cell.execute();
+      }
+
+      // If we are at the end always insert a new cell and return
+      if (cell_index === (env.notebook.ncells()-1)) {
+        env.notebook.command_mode();
+        env.notebook.insert_cell_below();
+        env.notebook.select(cell_index+1);
+        env.notebook.edit_mode();
+        env.notebook.scroll_to_bottom();
+        env.notebook.set_dirty(true);
+        return;
+      }
+
+      env.notebook.command_mode();
+      if (env.notebook.get_cell(cell_index+1).element.is(':visible')) {
+        env.notebook.select(cell_index + 1);
+      } else {
+        env.notebook.insert_cell_below();
+        env.notebook.select(cell_index + 1);
+        env.notebook.edit_mode();
+
+      }
+      env.notebook.focus_cell();
+      env.notebook.set_dirty(true);
+    };
+  }
+
   var load_ipython_extension = function() {
     load_css(); //console.log("Loading css")
     toc_button(); //console.log("Adding toc_button")
@@ -233,11 +299,13 @@ define([
       // this tests if the notebook is fully loaded
       console.log("[sidebar_toc] Notebook fully loaded -- sidebar_toc initialized ")
       toc_init();
+      patch_actions();
     } else {
       console.log("[sidebar_toc] Waiting for notebook availability")
       $([Jupyter.events]).on("notebook_loaded.Notebook", function() {
         console.log("[sidebar_toc] sidebar_toc initialized (via notebook_loaded)")
         toc_init();
+        patch_actions();
       })
     }
 
