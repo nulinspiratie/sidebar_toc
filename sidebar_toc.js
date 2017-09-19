@@ -323,7 +323,9 @@
         $("<div/>").attr("id", "toc").addClass('toc')
       );
 
-    $("body").append(toc_wrapper);
+    var sidebar = $('<div id="sidebar-wrapper"/>').append(toc_wrapper);
+
+    $("body").append(sidebar);
 
     // On header/menu/toolbar resize, resize the toc itself
     // (if displayed as a sidebar)
@@ -333,13 +335,13 @@
     }
 
 
-    $('#toc-wrapper').resizable({
+    $('#sidebar-wrapper').resizable({
       resize : function(event,ui){
         if (cfg.sideBar){
           setNotebookWidth(cfg, st)
         }
         else {
-          $('#toc').css('height', $('#toc-wrapper').height()-$('#toc-header').height());
+          $('#toc').css('height', $('#sidebar-wrapper').height()-$('#toc-header').height());
         }
       },
       start : function(event, ui) {
@@ -349,12 +351,12 @@
       stop :  function (event,ui){ // on save, store toc position
         if(liveNotebook){
           IPython.notebook.metadata.toc['toc_position']={
-            'left':$('#toc-wrapper').css('left'),
-            'top':$('#toc-wrapper').css('top'),
-            'height':$('#toc-wrapper').css('height'),
-            'width':$('#toc-wrapper').css('width'),
-            'right':$('#toc-wrapper').css('right')};
-          $('#toc').css('height', $('#toc-wrapper').height()-$('#toc-header').height())
+            'left':$('#sidebar-wrapper').css('left'),
+            'top':$('#sidebar-wrapper').css('top'),
+            'height':$('#sidebar-wrapper').css('height'),
+            'width':$('#sidebar-wrapper').css('width'),
+            'right':$('#sidebar-wrapper').css('right')};
+          $('#toc').css('height', $('#sidebar-wrapper').height()-$('#toc-header').height())
           IPython.notebook.set_dirty();
         }
         // Ensure position is fixed (again)
@@ -366,11 +368,11 @@
     // restore toc position at load
     if(liveNotebook){
       if (IPython.notebook.metadata.toc['toc_position'] !== undefined){
-        $('#toc-wrapper').css(IPython.notebook.metadata.toc['toc_position']);
+        $('#sidebar-wrapper').css(IPython.notebook.metadata.toc['toc_position']);
       }
     }
     // Ensure position is fixed
-    $('#toc-wrapper').css('position', 'fixed');
+    $('#sidebar-wrapper').css('position', 'fixed');
 
     // Restore toc display
     if(liveNotebook){
@@ -388,13 +390,13 @@
         }
         if (IPython.notebook.metadata.toc['toc_window_display']!==undefined)    {
           console.log("******Restoring toc display");
-          $('#toc-wrapper').css('display',IPython.notebook.metadata.toc['toc_window_display'] ? 'block' : 'none');
+          $('#sidebar-wrapper').css('display',IPython.notebook.metadata.toc['toc_window_display'] ? 'block' : 'none');
         }
       }
     }
 
     // if toc-wrapper is undefined (first run(?), then hide it)
-    if ($('#toc-wrapper').css('display')==undefined) $('#toc-wrapper').css('display',"none") //block
+    if ($('#sidebar-wrapper').css('display')==undefined) $('#sidebar-wrapper').css('display',"none") //block
     //};
 
     $('#site').bind('siteHeight', function() {
@@ -403,12 +405,12 @@
     $('#site').trigger('siteHeight');
 
     // Initial style for sidebar
-    $('#toc-wrapper').addClass('sidebar-wrapper');
+    $('#sidebar-wrapper').addClass('sidebar-wrapper');
     if (!liveNotebook) {
-      $('#toc-wrapper').css('width', '202px');
+      $('#sidebar-wrapper').css('width', '202px');
       $('#notebook-container').css('margin-left', '212px');
-      $('#toc-wrapper').css('height', '96%');
-      $('#toc').css('height', $('#toc-wrapper').height() - $('#toc-header').height())
+      $('#sidebar-wrapper').css('height', '96%');
+      $('#toc').css('height', $('#sidebar-wrapper').height() - $('#toc-header').height())
     } else {
       if (cfg.toc_window_display) {
         setTimeout(function() {
@@ -416,12 +418,12 @@
         }, 500)
       }
       setTimeout(function() {
-        $('#toc-wrapper').css('height', $('#site').height());
+        $('#sidebar-wrapper').css('height', $('#site').height());
         $('#toc').css('height', $('#toc-wrapper').height() - $('#toc-header').height())
       }, 500)
     }
-    setTimeout(function() { $('#toc-wrapper').css('top', liveNotebook ? $('#header').height() : 0); }, 500) //wait a bit
-    $('#toc-wrapper').css('left', 0);
+    setTimeout(function() { $('#sidebar-wrapper').css('top', liveNotebook ? $('#header').height() : 0); }, 500) //wait a bit
+    $('#sidebar-wrapper').css('left', 0);
 
   }
 
