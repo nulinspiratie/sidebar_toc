@@ -135,7 +135,7 @@
 	function get_cell_level (cell) {
 		// headings can have a level up to 6, so 7 is used for a non-heading
 		var level = 7;
-		if (cell === undefined) {
+		if (cell === undefined || cell === null) {
 			return level;
 		}
 		if (liveNotebook) {
@@ -556,13 +556,13 @@
   var toggle_toc = function (cfg,st) {
     // toggle draw (first because of first-click behavior)
     //$("#toc-wrapper").toggle({'complete':function(){
-    $("#toc-wrapper").toggle({
+    $("#sidebar-wrapper").toggle({
       'progress':function(){
         setNotebookWidth(cfg,st);
       },
       'complete': function(){
         if(liveNotebook){
-          IPython.notebook.metadata.toc['toc_window_display']=$('#toc-wrapper').css('display')=='block';
+          IPython.notebook.metadata.toc['toc_window_display']=$('#sidebar-wrapper').css('display')=='block';
           IPython.notebook.set_dirty();
         }
         // recompute:
