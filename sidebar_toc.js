@@ -50,7 +50,7 @@
     setTimeout(function() { $.ajax() }, 100);
     evt.preventDefault();
     var trg_id = $(evt.currentTarget).attr('data-toc-modified-id');
-    console.log('Sidebar: trg_id: ' + trg_id);
+    console.log('Sidebar: Clicked link trg_id: ' + trg_id);
     // use native scrollIntoView method with semi-unique id
     // ! browser native click does't follow links on all browsers
     // $('<a>').attr('href', window.location.href.split('#')[0] + '#' + trg_id)[0].click();
@@ -64,6 +64,32 @@
       if (cfg.hide_others) {
         hide_all_except_id(trg_id);
       }
+
+      // Hide all other toc items
+      var all_headers= $("#notebook").find(":header");
+      all_headers.each((i, header) => {
+        let link_elem = document.getElementById(trg_id).parentNode;
+        let link_number = trg_id.split('-').slice(-1)[0];
+        let link_level = parseInt(link_elem.tagName.slice(1), 10);
+        // console.log(link_elem.tagName)
+        // console.log('Main number: ' + link_number + ', level ' + link_level)
+        var all_headers= $("#notebook").find(":header");
+        all_headers.each((i, header) => {
+            let header_trg_id = $(header).attr('data-toc-modified-id');
+            let header_number = header_trg_id.split('-').slice(-1)[0];
+            let header_level = parseInt(header.tagName.slice(1), 10);
+            // console.log('Header ' + header_trg_id)
+            // console.log('    number: ' + header_number + ', level: ' + header_level)
+            // console.log('    ' + (header_level <= link_level) + ' ' + !link_number.startsWith(header_number) + ' ' + $(header).hasClass('fa fa-fw fa-caret-down'))
+            if (header_level == 1 && !link_number.startsWith(header_number)) {
+            collapse_by_id(header_trg_id, false);
+            // console.log('    collapsing');
+            } else {
+                // console.log('    not collapsing')
+                collapse_by_id(header_trg_id, true);
+            }
+        });
+      });
 
       highlight_toc_item("toc_link_click", {cell: cell});
     }
@@ -86,7 +112,7 @@
   }
 
   function hide_cells_above(cell) {
-    console.log(`Sidebar: Hiding cells above ${Jupyter.notebook.find_cell_index(cell)}`);
+    // console.log(`Sidebar: Hiding cells above ${Jupyter.notebook.find_cell_index(cell)}`);
     while (cell !== null) {
       cell = Jupyter.notebook.get_prev_cell(cell);
       if (cell !== null) {
@@ -96,7 +122,7 @@
   }
 
   function hide_cells_below(cell) {
-    console.log(`Sidebar: Hiding cells below ${Jupyter.notebook.find_cell_index(cell)}`);
+    // console.log(`Sidebar: Hiding cells below ${Jupyter.notebook.find_cell_index(cell)}`);
     while (cell !== null) {
       cell = Jupyter.notebook.get_next_cell(cell);
       if (cell !== null) {
@@ -106,7 +132,7 @@
   }
 
   function show_all_cells() {
-    console.log('Sidebar: Showing all cells');
+    // console.log('Sidebar: Showing all cells');
     for (let cell of Jupyter.notebook.get_cells()) {
       cell.element.slideDown(0)
     }
@@ -115,7 +141,7 @@
   function show_cells_between(cell_begin, cell_end) {
     var cell_begin_index = Jupyter.notebook.find_cell_index(cell_begin);
     var cell_end_index = Jupyter.notebook.find_cell_index(cell_end);
-    console.log(`Sidebar: showing cells between ${cell_begin_index} and ${cell_end_index}`)
+    // console.log(`Sidebar: showing cells between ${cell_begin_index} and ${cell_end_index}`)
 
     var cell = cell_begin;
     while (Jupyter.notebook.find_cell_index(cell) !== cell_end_index) {
@@ -174,12 +200,14 @@
     var hclone = h.clone();
     hclone = removeMathJaxPreview(hclone);
     a.html(hclone.html());
+    a.width('100%');
+    a.css('display', 'inline-block');
     a.on('click', callbackTocLinkClick);
     return a;
   };
 
   function highlight_toc_item(evt, data) {
-    console.log('Sidebar: Highlighting toc item (highlight_toc_item)');
+    // console.log('Sidebar: Highlighting toc item (highlight_toc_item)');
     var c = $(data.cell.element);
     if (c.length < 1) {
       return;
@@ -448,6 +476,7 @@
       return Boolean($(elt).attr('data-toc-modified-id'));
     }).attr('data-toc-modified-id');
     var show = evt.type.indexOf('un') >= 0;
+
     // use trigger_event false to avoid re-triggering collapsible_headings
     collapse_by_id(trg_id, show, false);
   };

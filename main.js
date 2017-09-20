@@ -288,6 +288,8 @@ define([
       env.notebook.focus_cell();
       env.notebook.set_dirty(true);
     };
+
+    Jupyter.notebook.events.off('delete.Cell');
   }
 
   var load_ipython_extension = function() {
