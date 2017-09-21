@@ -66,29 +66,26 @@
       }
 
       // Hide all other toc items
+      let link_elem = document.getElementById(trg_id).parentNode;
+      let link_number = trg_id.split('-').slice(-1)[0];
+      let link_level = parseInt(link_elem.tagName.slice(1), 10);
+      // console.log(link_elem.tagName)
+      // console.log('Main number: ' + link_number + ', level ' + link_level)
       var all_headers= $("#notebook").find(":header");
       all_headers.each((i, header) => {
-        let link_elem = document.getElementById(trg_id).parentNode;
-        let link_number = trg_id.split('-').slice(-1)[0];
-        let link_level = parseInt(link_elem.tagName.slice(1), 10);
-        // console.log(link_elem.tagName)
-        // console.log('Main number: ' + link_number + ', level ' + link_level)
-        var all_headers= $("#notebook").find(":header");
-        all_headers.each((i, header) => {
-            let header_trg_id = $(header).attr('data-toc-modified-id');
-            let header_number = header_trg_id.split('-').slice(-1)[0];
-            let header_level = parseInt(header.tagName.slice(1), 10);
-            // console.log('Header ' + header_trg_id)
-            // console.log('    number: ' + header_number + ', level: ' + header_level)
-            // console.log('    ' + (header_level <= link_level) + ' ' + !link_number.startsWith(header_number) + ' ' + $(header).hasClass('fa fa-fw fa-caret-down'))
-            if (header_level == 1 && !link_number.startsWith(header_number)) {
-            collapse_by_id(header_trg_id, false);
-            // console.log('    collapsing');
-            } else {
-                // console.log('    not collapsing')
-                collapse_by_id(header_trg_id, true);
-            }
-        });
+          let header_trg_id = $(header).attr('data-toc-modified-id');
+          let header_number = header_trg_id.split('-').slice(-1)[0];
+          let header_level = parseInt(header.tagName.slice(1), 10);
+          // console.log('Header ' + header_trg_id)
+          // console.log('    number: ' + header_number + ', level: ' + header_level)
+          // console.log('    ' + (header_level <= link_level) + ' ' + !link_number.startsWith(header_number) + ' ' + $(header).hasClass('fa fa-fw fa-caret-down'))
+          if (header_level == 1 && !link_number.startsWith(header_number)) {
+          collapse_by_id(header_trg_id, false);
+          // console.log('    collapsing');
+          } else {
+              // console.log('    not collapsing')
+              collapse_by_id(header_trg_id, true);
+          }
       });
 
       highlight_toc_item("toc_link_click", {cell: cell});
